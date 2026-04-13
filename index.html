@@ -4,8 +4,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Album Collection</title>
-<link href="./album-collection_files/css2" rel="stylesheet">
-<script src="./album-collection_files/supabase.js.다운로드"></script>
+<link href="./index_files/css2" rel="stylesheet">
+<script src="./index_files/supabase.min.js.다운로드"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -325,16 +325,23 @@ Lucky Girl Syndrome"></textarea>
 const PW = '1q2w3e4r5t';
 const SUPABASE_URL = 'https://ymlcvvdaujtzxpuqlwfl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltbGN2dmRhdWp0enhwdXFsd2ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQ4NDIsImV4cCI6MjA5MTU4MDg0Mn0._gEEz-mF4zh8H0lAFxautlXORYwBuekHghK61BwwTw4';
-const CLAUDE_KEY  = ''; // Claude API 키 (나중에 입력)
+const CLAUDE_KEY  = '';
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ── 상태 ──────────────────────────────────────────────────
+let db;
 let artists=[], albums=[], versions=[];
 let selArtist=null, selAlbum=null, selVersion=null;
 let editingAlbumId=null, editingVerId=null;
 let pendingImgFile={artist:null, ver:null};
+
+window.addEventListener('DOMContentLoaded', () => {
+  const { createClient } = supabase;
+  db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  if(sessionStorage.getItem('col_auth')==='1'){
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
+    init();
+  }
+});
 
 // ── 잠금 ──────────────────────────────────────────────────
 function toggleLockEye(){
@@ -356,11 +363,6 @@ function unlock(){
     inp.value='';
     setTimeout(()=>{inp.classList.remove('err');err.textContent='';},1500);
   }
-}
-if(sessionStorage.getItem('col_auth')==='1'){
-  document.getElementById('lock').style.display='none';
-  document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
-  init();
 }
 
 // ── 초기화 ────────────────────────────────────────────────
