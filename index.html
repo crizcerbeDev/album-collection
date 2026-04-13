@@ -562,9 +562,7 @@ function renderMain(){
       </div>`;
     });
 
-    html+=`<div class="add-ver-btn" onclick="openVerModal()">
-        <span style="font-size:20px">+</span>버전 추가
-      </div></div>`;
+    html+=`</div>`;
 
     if(selVersion){
       const ver=versions.find(v=>v.id===selVersion.id);
@@ -595,9 +593,11 @@ function renderMain(){
 
     html+=`</div>`;
 
-    // 수록곡 - 항상 오른쪽에 표시
+    // 수록곡 + 통계 오른쪽
+    html+=`<div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">`;
+
     if(tracks.length>0){
-      html+=`<div style="width:220px;flex-shrink:0;background:#fafafa;border:.5px solid var(--border);border-radius:8px;padding:14px;max-height:320px;overflow-y:auto">
+      html+=`<div style="background:#fafafa;border:.5px solid var(--border);border-radius:8px;padding:14px;max-height:260px;overflow-y:auto">
         <div class="track-label" style="margin-bottom:10px">수록곡 (${tracks.length}곡)</div>`;
       tracks.forEach((t,i)=>{
         const isTitle=t.startsWith('*');
@@ -611,13 +611,33 @@ function renderMain(){
       html+=`</div>`;
     }
 
-    html+=`</div>`;
+    // 통계 - 수록곡 아래 작게
+    html+=`<div style="background:#fafafa;border:.5px solid var(--border);border-radius:8px;padding:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:700">${totalVers}</div>
+          <div style="font-size:9px;color:var(--text3);letter-spacing:.08em">총 버전</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:700;color:var(--green)">${ownedVers}</div>
+          <div style="font-size:9px;color:var(--text3);letter-spacing:.08em">소장 버전</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:700;color:var(--blue)">${ownedTotal}</div>
+          <div style="font-size:9px;color:var(--text3);letter-spacing:.08em">CD 총 수량</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:700;color:var(--text3)">${totalVers-ownedVers}</div>
+          <div style="font-size:9px;color:var(--text3);letter-spacing:.08em">미소장</div>
+        </div>
+      </div>
+    </div>
 
-    html+=`<div class="own-summary" style="margin-top:12px">
-      <div class="sum-card"><div class="sum-num">${totalVers}</div><div class="sum-label">총 버전</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--green)">${ownedVers}</div><div class="sum-label">소장 버전</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--blue)">${ownedTotal}</div><div class="sum-label">CD 총 수량</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--text3)">${totalVers-ownedVers}</div><div class="sum-label">미소장</div></div>
+    </div></div>`;
+
+    // 버전 추가 버튼 맨 아래
+    html+=`<div class="add-ver-btn" style="margin-top:12px" onclick="openVerModal()">
+      <span style="font-size:20px">+</span>버전 추가
     </div></div>`;
   }
 
