@@ -48,16 +48,18 @@ header{background:#fff;border-bottom:.5px solid var(--border);padding:0 24px;hei
 .body{display:flex;flex:1}
 
 /* ── 사이드바 ── */
-.sidebar{width:200px;background:#fff;border-right:.5px solid var(--border);flex-shrink:0;overflow-y:auto;padding:16px 0}
+.sidebar{width:220px;background:#fff;border-right:.5px solid var(--border);flex-shrink:0;overflow-y:auto;padding:16px 0}
 .sidebar-label{font-size:9px;letter-spacing:.15em;color:var(--text3);padding:0 16px;margin-bottom:8px}
-.artist-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.artist-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .15s;border-left:2px solid transparent;position:relative}
 .artist-item:hover{background:#f5f5f5}
 .artist-item.active{background:#f0f0f0;border-left-color:#111}
-.artist-avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#888}
+.artist-avatar{width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#888;position:relative}
 .artist-avatar img{width:100%;height:100%;object-fit:cover}
-.artist-info{min-width:0}
-.artist-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.artist-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.artist-avatar-edit{position:absolute;inset:0;background:rgba(0,0,0,0.45);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;font-size:11px;color:#fff;cursor:pointer}
+.artist-avatar:hover .artist-avatar-edit{opacity:1}
+.artist-info{min-width:0;flex:1}
+.artist-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist-sub{font-size:10px;color:var(--text3);margin-top:2px}
 
 /* ── 메인 ── */
 .main{flex:1;padding:24px;overflow-y:auto}
@@ -317,37 +319,58 @@ header{background:#fff;border-bottom:.5px solid var(--border);padding:0 24px;hei
   </div>
 </div>
 
-<!-- 일괄 추가 모달 -->
+<!-- 앨범 이미지 변경 모달 -->
+<div class="modal-overlay" id="album-img-modal" onclick="handleOverlay(event,'album-img-modal')">
+  <div class="modal">
+    <h3>앨범 대표 이미지 변경</h3>
+    <div class="form-group">
+      <div class="img-upload-area" onclick="document.getElementById('f-album-img-file').click()">
+        <input type="file" id="f-album-img-file" accept="image/*" onchange="previewImg(this,'album-img-preview','f-album-img-url')">
+        <img id="album-img-preview" class="img-preview" style="display:none">
+        <div class="img-upload-hint">📁 클릭해서 이미지 업로드<br><span style="color:#ccc">또는</span></div>
+      </div>
+      <input type="text" id="f-album-img-url" placeholder="이미지 URL 직접 입력" style="margin-top:6px" oninput="syncImgUrl(this,'album-img-preview')">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('album-img-modal')">취소</button>
+      <button class="btn-save" onclick="saveAlbumImg()">변경하기</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="artist-img-modal" onclick="handleOverlay(event,'artist-img-modal')">
+  <div class="modal">
+    <h3>프로필 이미지 변경</h3>
+    <div class="form-group">
+      <div class="img-upload-area" onclick="document.getElementById('f-artist-img-edit-file').click()">
+        <input type="file" id="f-artist-img-edit-file" accept="image/*" onchange="previewImg(this,'artist-img-edit-preview','f-artist-img-edit-url')">
+        <img id="artist-img-edit-preview" class="img-preview" style="display:none">
+        <div class="img-upload-hint">📁 클릭해서 이미지 업로드<br><span style="color:#ccc">또는</span></div>
+      </div>
+      <input type="text" id="f-artist-img-edit-url" placeholder="이미지 URL 직접 입력" style="margin-top:6px" oninput="syncImgUrl(this,'artist-img-edit-preview')">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('artist-img-modal')">취소</button>
+      <button class="btn-save" onclick="saveArtistImg()">변경하기</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="bulk-modal" onclick="handleOverlay(event,'bulk-modal')">
   <div class="modal">
-    <h3>📋 클로드에서 복붙으로 앨범 추가</h3>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">
-      클로드 채팅에서 받은 앨범 정보를 아래 형식으로 붙여넣으세요.<br>
-      <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:11px">---</code> 로 구분하면 여러 앨범을 한번에 추가할 수 있어요!
-    </p>
-    <div style="background:#f8f8f8;border:.5px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--text2);line-height:1.9;font-family:monospace">
-      앨범명: LILAC<br>
-      종류: 정규<br>
-      발매일: 2021.03.25<br>
-      수록곡:<br>
-      *LILAC<br>
-      Coin<br>
-      봄 안녕 봄<br>
-      ---<br>
-      앨범명: The Winning<br>
-      종류: 정규<br>
-      발매일: 2024.10.23<br>
-      수록곡:<br>
-      *Shopper
-    </div>
+    <h3>🎵 AI로 앨범 자동 검색</h3>
     <div class="form-group">
-      <label>여기에 붙여넣기</label>
-      <textarea id="f-bulk-text" style="min-height:200px;font-size:12px;font-family:monospace" placeholder="앨범명: LILAC&#10;종류: 정규&#10;발매일: 2021.03.25&#10;수록곡:&#10;*LILAC&#10;Coin&#10;봄 안녕 봄&#10;---&#10;앨범명: The Winning&#10;..."></textarea>
+      <label>가수 이름 입력</label>
+      <input type="text" id="f-ai-artist" placeholder="예: 아이유, 에스파, 뉴진스..." onkeydown="if(event.key==='Enter')fetchAIAlbums()">
     </div>
-    <div id="bulk-preview" style="margin-bottom:12px"></div>
+    <div id="ai-result-area" style="display:none">
+      <div class="ai-loading" id="ai-loading" style="display:none">
+        <div class="spinner"></div>
+        <span>AI가 앨범 정보를 가져오는 중...</span>
+      </div>
+      <div id="ai-preview" style="background:#f8f8f8;border:.5px solid var(--border);border-radius:6px;padding:12px;max-height:240px;overflow-y:auto;font-size:12px;line-height:1.8;margin-bottom:12px"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('bulk-modal')">취소</button>
-      <button class="btn-save" onclick="saveBulk()">한번에 추가하기</button>
+      <button class="btn-save" id="ai-search-btn" onclick="fetchAIAlbums()">🔍 검색하기</button>
     </div>
   </div>
 </div>
@@ -438,7 +461,10 @@ function renderSidebar(){
       ?`<img src="${a.image_url}" onerror="this.style.display='none'">`
       :`<span>${a.name.slice(0,2)}</span>`;
     div.innerHTML=`
-      <div class="artist-avatar">${imgHTML}</div>
+      <div class="artist-avatar" onclick="event.stopPropagation();openArtistImgEdit(${a.id})">
+        ${imgHTML}
+        <div class="artist-avatar-edit">변경</div>
+      </div>
       <div class="artist-info">
         <div class="artist-name">${a.name}</div>
         <div class="artist-sub">${myAlbums.length}장 · ${ownedCnt}개 소장</div>
@@ -454,49 +480,42 @@ function selectArtist(a){
   renderMain();
 }
 
+// ── 정렬 상태 ─────────────────────────────────────────────
+let sortByDate = false;
+
 // ── 메인 렌더 ─────────────────────────────────────────────
 function renderMain(){
   const main=document.getElementById('main');
   if(!selArtist){main.innerHTML=`<div class="empty"><div class="empty-icon">🎵</div><div class="empty-text">가수를 선택하세요</div></div>`;return;}
-  const myAlbums=albums.filter(al=>al.artist_id===selArtist.id);
-  const types=[...new Set(myAlbums.map(al=>al.type))];
+  let myAlbums=albums.filter(al=>al.artist_id===selArtist.id);
 
   let html=`
     <div class="main-header">
       <div class="main-title">${selArtist.name}</div>
       <div class="main-actions">
+        <button class="btn-sm${sortByDate?' primary':''}" onclick="toggleSort()">📅 ${sortByDate?'발매순':'장르순'}</button>
         <button class="btn-sm" onclick="openAlbumModal()">+ 앨범 추가</button>
-        <button class="btn-sm primary" onclick="openBulkModal()">📋 복붙으로 추가</button>
+        <button class="btn-sm primary" onclick="openBulkModal()">🤖 AI 앨범 검색</button>
         <button class="btn-sm" onclick="deleteArtist(${selArtist.id})" style="color:#dc2626">삭제</button>
       </div>
     </div>`;
 
   if(myAlbums.length===0){
     html+=`<div class="empty"><div class="empty-icon">💿</div><div class="empty-text">앨범이 없어요.<br>추가하거나 AI 자동검색을 사용해보세요!</div></div>`;
+  } else if(sortByDate){
+    // 발매순 정렬
+    myAlbums=[...myAlbums].sort((a,b)=>(b.release_date||'').localeCompare(a.release_date||''));
+    html+=`<div class="album-section"><div class="album-section-title">발매순 (최신순)</div><div class="album-grid">`;
+    myAlbums.forEach(al=>{ html+=albumCardHTML(al); });
+    html+=`</div></div>`;
   } else {
+    // 장르별 정렬
+    const typeOrder=['정규','미니앨범','싱글','EP','리패키지','컴필레이션'];
+    const types=[...new Set(myAlbums.map(al=>al.type))].sort((a,b)=>typeOrder.indexOf(a)-typeOrder.indexOf(b));
     types.forEach(type=>{
       const typeAlbums=myAlbums.filter(al=>al.type===type);
       html+=`<div class="album-section"><div class="album-section-title">${type}</div><div class="album-grid">`;
-      typeAlbums.forEach(al=>{
-        const myVers=versions.filter(v=>v.album_id===al.id);
-        const ownedTotal=myVers.reduce((s,v)=>s+(v.owned_cd||0),0);
-        const thumb=myVers[0]?.image_url
-          ?`<img src="${myVers[0].image_url}" onerror="this.parentNode.innerHTML='<span class=album-thumb-placeholder>💿</span>'">`
-          :`<span class="album-thumb-placeholder">💿</span>`;
-        const badge=ownedTotal>0
-          ?`<div class="owned-badge">${ownedTotal}장</div>`
-          :`<div class="not-owned-badge">미소장</div>`;
-        html+=`<div class="album-card${selAlbum?.id===al.id?' selected':''}" onclick="selectAlbum(${al.id})">
-          <div class="album-thumb">${thumb}${badge}</div>
-          <div class="album-body">
-            <div class="album-title">${al.title}</div>
-            <div class="album-meta">
-              <span class="tag tag-type">${al.type}</span>
-              ${ownedTotal>0?`<span class="tag tag-owned">CD ${ownedTotal}장</span>`:`<span class="tag tag-notowned">미소장</span>`}
-            </div>
-          </div>
-        </div>`;
-      });
+      typeAlbums.forEach(al=>{ html+=albumCardHTML(al); });
       html+=`</div></div>`;
     });
   }
@@ -509,15 +528,26 @@ function renderMain(){
     const totalVers=myVers.length;
     const ownedVers=myVers.filter(v=>(v.owned_cd||0)>0).length;
 
+    // 앨범 대표 이미지 (버전 없어도 앨범 자체 이미지)
+    const albumImg=al.image_url||myVers[0]?.image_url||'';
+
     html+=`<div class="version-panel">
       <div class="vp-header">
-        <div>
-          <div class="vp-title">${al.title}</div>
-          <div class="vp-sub">${al.type} · ${al.release_date||''}</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="vd-img" onclick="openAlbumImgEdit(${al.id})" style="width:64px;height:64px;border-radius:8px;background:#f0f0f0;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+            ${albumImg?`<img src="${albumImg}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:`<span style="font-size:24px;color:#ccc">💿</span>`}
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:10px;color:#fff;border-radius:8px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">이미지<br>변경</div>
+          </div>
+          <div>
+            <div class="vp-title">${al.title}</div>
+            <div class="vp-sub">${al.type} · ${al.release_date||''}</div>
+          </div>
         </div>
         <button class="btn-sm" style="color:#dc2626;font-size:10px" onclick="deleteAlbum(${al.id})">앨범 삭제</button>
       </div>
-      <div class="version-grid">`;
+      <div style="display:flex;gap:16px;margin-top:16px">
+        <div style="flex:1">
+          <div class="version-grid">`;
 
     myVers.forEach(v=>{
       const thumb=v.image_url
@@ -533,18 +563,15 @@ function renderMain(){
     });
 
     html+=`<div class="add-ver-btn" onclick="openVerModal()">
-      <span style="font-size:20px">+</span>버전 추가
-    </div></div>`;
+        <span style="font-size:20px">+</span>버전 추가
+      </div></div>`;
 
     if(selVersion){
       const ver=versions.find(v=>v.id===selVersion.id);
-      const imgHTML=ver.image_url
-        ?`<img src="${ver.image_url}" onerror="this.style.display='none'">`
-        :`<span style="font-size:24px;color:#ccc">💿</span>`;
-      html+=`<div class="ver-detail">
+      html+=`<div class="ver-detail" style="margin-top:12px">
         <div class="vd-top">
           <div class="vd-img" onclick="openVerImgEdit(${ver.id})">
-            ${imgHTML}
+            ${ver.image_url?`<img src="${ver.image_url}" onerror="this.style.display='none'">`:`<span style="font-size:24px;color:#ccc">💿</span>`}
             <div class="vd-img-overlay">이미지<br>변경</div>
           </div>
           <div class="vd-info">
@@ -562,23 +589,67 @@ function renderMain(){
               <button class="btn-sm" onclick="deleteVersion(${ver.id})" style="color:#dc2626;font-size:10px">삭제</button>
             </div>
           </div>
-        </div>`;
+        </div>
+      </div>`;
+    }
 
-      if(tracks.length>0){
-        html+=`<div class="track-section">
-          <div class="track-label">수록곡 (${tracks.length}곡)</div>`;
-        tracks.forEach((t,i)=>{
-          const isTitle=t.startsWith('*');
-          const name=isTitle?t.slice(1):t;
-          html+=`<div class="track-row">
-            <div class="track-num">${i+1}</div>
-            <div class="track-name">${name}</div>
-            ${isTitle?'<span class="track-title-tag">타이틀</span>':''}
-          </div>`;
-        });
-        html+=`</div>`;
-      }
+    html+=`</div>`;
+
+    // 수록곡 - 항상 오른쪽에 표시
+    if(tracks.length>0){
+      html+=`<div style="width:220px;flex-shrink:0;background:#fafafa;border:.5px solid var(--border);border-radius:8px;padding:14px;max-height:320px;overflow-y:auto">
+        <div class="track-label" style="margin-bottom:10px">수록곡 (${tracks.length}곡)</div>`;
+      tracks.forEach((t,i)=>{
+        const isTitle=t.startsWith('*');
+        const name=isTitle?t.slice(1):t;
+        html+=`<div class="track-row">
+          <div class="track-num">${i+1}</div>
+          <div class="track-name">${name}</div>
+          ${isTitle?'<span class="track-title-tag">타이틀</span>':''}
+        </div>`;
+      });
       html+=`</div>`;
+    }
+
+    html+=`</div>`;
+
+    html+=`<div class="own-summary" style="margin-top:12px">
+      <div class="sum-card"><div class="sum-num">${totalVers}</div><div class="sum-label">총 버전</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:var(--green)">${ownedVers}</div><div class="sum-label">소장 버전</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:var(--blue)">${ownedTotal}</div><div class="sum-label">CD 총 수량</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:var(--text3)">${totalVers-ownedVers}</div><div class="sum-label">미소장</div></div>
+    </div></div>`;
+  }
+
+  main.innerHTML=html;
+}
+
+function albumCardHTML(al){
+  const myVers=versions.filter(v=>v.album_id===al.id);
+  const ownedTotal=myVers.reduce((s,v)=>s+(v.owned_cd||0),0);
+  const imgSrc=al.image_url||myVers[0]?.image_url||'';
+  const thumb=imgSrc
+    ?`<img src="${imgSrc}" onerror="this.parentNode.innerHTML='<span class=album-thumb-placeholder>💿</span>'">`
+    :`<span class="album-thumb-placeholder">💿</span>`;
+  const badge=ownedTotal>0
+    ?`<div class="owned-badge">${ownedTotal}장</div>`
+    :`<div class="not-owned-badge">미소장</div>`;
+  return `<div class="album-card${selAlbum?.id===al.id?' selected':''}" onclick="selectAlbum(${al.id})">
+    <div class="album-thumb">${thumb}${badge}</div>
+    <div class="album-body">
+      <div class="album-title">${al.title}</div>
+      <div class="album-meta">
+        <span class="tag tag-type">${al.type}</span>
+        ${ownedTotal>0?`<span class="tag tag-owned">CD ${ownedTotal}장</span>`:`<span class="tag tag-notowned">미소장</span>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleSort(){
+  sortByDate=!sortByDate;
+  renderMain();
+}
     }
 
     html+=`<div class="own-summary">
@@ -687,53 +758,131 @@ CD로 발매된 앨범만 포함. 최신순 정렬.`}]
   await loadAll(); renderMain(); updateStats(); renderSidebar();
 }
 
-// ── 일괄 추가 ─────────────────────────────────────────────
+// ── 앨범 이미지 변경 ──────────────────────────────────────
+let editingAlbumImgId=null;
+function openAlbumImgEdit(id){
+  editingAlbumImgId=id;
+  const al=albums.find(x=>x.id===id);
+  document.getElementById('f-album-img-url').value=al?.image_url||'';
+  const prev=document.getElementById('album-img-preview');
+  if(al?.image_url){prev.src=al.image_url;prev.style.display='block';}
+  else prev.style.display='none';
+  openModal('album-img-modal');
+}
+async function saveAlbumImg(){
+  const al=albums.find(x=>x.id===editingAlbumImgId);
+  if(!al)return;
+  let imgUrl=document.getElementById('f-album-img-url').value.trim();
+  if(pendingImgFile.ver){
+    imgUrl=await uploadImg(pendingImgFile.ver,'album_'+Date.now());
+    pendingImgFile.ver=null;
+  }
+  const {error}=await db.from('albums').update({image_url:imgUrl}).eq('id',al.id);
+  if(error){showToast('저장 실패','err');return;}
+  al.image_url=imgUrl;
+  closeModal('album-img-modal');
+  renderMain();
+  showToast('이미지가 변경됐어요!','ok');
+}
+
+// ── 가수 이미지 변경 ──────────────────────────────────────
+let editingArtistImgId=null;
+function openArtistImgEdit(id){
+  editingArtistImgId=id;
+  const a=artists.find(x=>x.id===id);
+  document.getElementById('f-artist-img-edit-url').value=a?.image_url||'';
+  const prev=document.getElementById('artist-img-edit-preview');
+  if(a?.image_url){prev.src=a.image_url;prev.style.display='block';}
+  else prev.style.display='none';
+  pendingImgFile.artist=null;
+  openModal('artist-img-modal');
+}
+async function saveArtistImg(){
+  const a=artists.find(x=>x.id===editingArtistImgId);
+  if(!a)return;
+  let imgUrl=document.getElementById('f-artist-img-edit-url').value.trim();
+  if(pendingImgFile.artist){
+    imgUrl=await uploadImg(pendingImgFile.artist,'artist_'+Date.now());
+    pendingImgFile.artist=null;
+  }
+  const {error}=await db.from('artists').update({image_url:imgUrl}).eq('id',a.id);
+  if(error){showToast('저장 실패','err');return;}
+  a.image_url=imgUrl;
+  closeModal('artist-img-modal');
+  renderSidebar();
+  showToast('이미지가 변경됐어요!','ok');
+}
 function openBulkModal(){
-  document.getElementById('f-bulk-text').value='';
-  document.getElementById('bulk-preview').innerHTML='';
+  document.getElementById('f-ai-artist').value=selArtist?.name||'';
+  document.getElementById('ai-result-area').style.display='none';
+  document.getElementById('ai-preview').innerHTML='';
+  const btn=document.getElementById('ai-search-btn');
+  btn.disabled=false; btn.textContent='🔍 검색하기';
+  btn.onclick=fetchAIAlbums;
   openModal('bulk-modal');
 }
 
-function parseBulkText(text){
-  const blocks=text.split(/^---$/m).map(b=>b.trim()).filter(Boolean);
-  return blocks.map(block=>{
-    const lines=block.split('\n').map(l=>l.trim()).filter(Boolean);
-    const get=(key)=>{
-      const line=lines.find(l=>l.startsWith(key+':'));
-      return line?line.slice(key.length+1).trim():'';
-    };
-    const tracksIdx=lines.findIndex(l=>l.startsWith('수록곡:'));
-    const tracks=tracksIdx>=0?lines.slice(tracksIdx+1).join('\n'):'';
-    return {
-      title: get('앨범명'),
-      type: get('종류')||'미니앨범',
-      release_date: get('발매일'),
-      tracks
-    };
-  }).filter(a=>a.title);
+async function fetchAIAlbums(){
+  const name=document.getElementById('f-ai-artist').value.trim();
+  if(!name){showToast('가수 이름을 입력하세요','err');return;}
+  if(!selArtist){showToast('먼저 가수를 선택하세요','err');return;}
+  const btn=document.getElementById('ai-search-btn');
+  const loading=document.getElementById('ai-loading');
+  const resultArea=document.getElementById('ai-result-area');
+  const preview=document.getElementById('ai-preview');
+  btn.disabled=true; btn.textContent='검색 중...';
+  resultArea.style.display='block';
+  loading.style.display='flex';
+  preview.innerHTML='';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:3000,
+        messages:[{role:'user',content:`케이팝 가수 "${name}"의 공식 음반 목록을 JSON 배열로만 응답해주세요. 다른 텍스트 없이 순수 JSON만.
+형식: [{"title":"앨범명","type":"정규|미니앨범|싱글|EP|리패키지","release_date":"YYYY.MM.DD","tracks":"*타이틀곡\\n수록곡2\\n수록곡3"}]
+CD로 발매된 앨범만 포함. 최신순 정렬.`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'[]';
+    const clean=text.replace(/```json|```/g,'').trim();
+    const albumList=JSON.parse(clean);
+    loading.style.display='none';
+    preview.innerHTML=albumList.map(al=>`
+      <div style="padding:8px 0;border-bottom:.5px solid var(--border)">
+        <div style="font-weight:500;font-size:12px">${al.title} <span style="color:var(--text3);font-size:10px">${al.type} · ${al.release_date||''}</span></div>
+        <div style="color:var(--text3);font-size:11px;margin-top:2px">${(al.tracks||'').split('\\n').slice(0,3).join(', ')}${(al.tracks||'').split('\\n').length>3?'...':''}</div>
+      </div>`).join('');
+    btn.disabled=false;
+    btn.textContent=`✅ ${albumList.length}개 앨범 추가하기`;
+    btn.onclick=()=>saveAIAlbums(albumList);
+  }catch(e){
+    loading.style.display='none';
+    preview.innerHTML=`<div style="color:var(--red);font-size:12px">검색 실패. 다시 시도해주세요.</div>`;
+    btn.disabled=false; btn.textContent='🔍 다시 검색';
+    btn.onclick=fetchAIAlbums;
+  }
 }
 
-async function saveBulk(){
-  if(!selArtist){showToast('가수를 먼저 선택하세요','err');return;}
-  const text=document.getElementById('f-bulk-text').value.trim();
-  if(!text){showToast('내용을 붙여넣어 주세요','err');return;}
-  const parsed=parseBulkText(text);
-  if(parsed.length===0){showToast('형식을 확인해주세요','err');return;}
-
-  const btn=document.querySelector('#bulk-modal .btn-save');
-  btn.disabled=true; btn.textContent='추가 중...';
-
+async function saveAIAlbums(albumList){
+  if(!selArtist)return;
+  const btn=document.getElementById('ai-search-btn');
+  btn.disabled=true; btn.textContent='저장 중...';
   let count=0;
-  for(const al of parsed){
+  for(const al of albumList){
     const {data,error}=await db.from('albums').insert([{artist_id:selArtist.id,...al}]).select().single();
     if(!error&&data){albums.push(data);count++;}
   }
-
   closeModal('bulk-modal');
   renderMain(); updateStats(); renderSidebar();
   showToast(`${count}개 앨범이 추가됐어요!`,'ok');
-  btn.disabled=false; btn.textContent='한번에 추가하기';
+  btn.disabled=false;
 }
+
+function parseBulkText(text){return[];}
 function openAlbumModal(){ editingAlbumId=null; document.getElementById('f-album-title').value=''; document.getElementById('f-album-type').value='정규'; document.getElementById('f-album-date').value=''; document.getElementById('f-album-tracks').value=''; openModal('album-modal'); }
 async function saveAlbum(){
   const title=document.getElementById('f-album-title').value.trim();
