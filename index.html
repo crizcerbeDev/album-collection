@@ -255,7 +255,7 @@ header{background:#fff;border-bottom:.5px solid var(--border);padding:0 24px;hei
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('artist-modal')">취소</button>
-      <button class="btn-save" id="artist-save-btn" onclick="saveArtist()">추가 + AI 앨범 자동검색</button>
+      <button class="btn-save" id="artist-save-btn" onclick="saveArtist()">추가하기</button>
     </div>
   </div>
 </div>
@@ -313,6 +313,41 @@ header{background:#fff;border-bottom:.5px solid var(--border);padding:0 24px;hei
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('ver-modal')">취소</button>
       <button class="btn-save" onclick="saveVersion()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 일괄 추가 모달 -->
+<div class="modal-overlay" id="bulk-modal" onclick="handleOverlay(event,'bulk-modal')">
+  <div class="modal">
+    <h3>📋 클로드에서 복붙으로 앨범 추가</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">
+      클로드 채팅에서 받은 앨범 정보를 아래 형식으로 붙여넣으세요.<br>
+      <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:11px">---</code> 로 구분하면 여러 앨범을 한번에 추가할 수 있어요!
+    </p>
+    <div style="background:#f8f8f8;border:.5px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--text2);line-height:1.9;font-family:monospace">
+      앨범명: LILAC<br>
+      종류: 정규<br>
+      발매일: 2021.03.25<br>
+      수록곡:<br>
+      *LILAC<br>
+      Coin<br>
+      봄 안녕 봄<br>
+      ---<br>
+      앨범명: The Winning<br>
+      종류: 정규<br>
+      발매일: 2024.10.23<br>
+      수록곡:<br>
+      *Shopper
+    </div>
+    <div class="form-group">
+      <label>여기에 붙여넣기</label>
+      <textarea id="f-bulk-text" style="min-height:200px;font-size:12px;font-family:monospace" placeholder="앨범명: LILAC&#10;종류: 정규&#10;발매일: 2021.03.25&#10;수록곡:&#10;*LILAC&#10;Coin&#10;봄 안녕 봄&#10;---&#10;앨범명: The Winning&#10;..."></textarea>
+    </div>
+    <div id="bulk-preview" style="margin-bottom:12px"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('bulk-modal')">취소</button>
+      <button class="btn-save" onclick="saveBulk()">한번에 추가하기</button>
     </div>
   </div>
 </div>
@@ -431,6 +466,7 @@ function renderMain(){
       <div class="main-title">${selArtist.name}</div>
       <div class="main-actions">
         <button class="btn-sm" onclick="openAlbumModal()">+ 앨범 추가</button>
+        <button class="btn-sm primary" onclick="openBulkModal()">📋 복붙으로 추가</button>
         <button class="btn-sm" onclick="deleteArtist(${selArtist.id})" style="color:#dc2626">삭제</button>
       </div>
     </div>`;
@@ -596,14 +632,13 @@ async function saveArtist(){
   if(!imgUrl) imgUrl=await fetchArtistImg(name);
 
   const {data,error}=await db.from('artists').insert([{name,image_url:imgUrl}]).select().single();
-  if(error){showToast('저장 실패','err');btn.disabled=false;btn.textContent='추가 + AI 앨범 자동검색';return;}
+  if(error){showToast('저장 실패','err');btn.disabled=false;btn.textContent='추가하기';return;}
   artists.push(data);
   closeModal('artist-modal');
   renderSidebar();
   selectArtist(data);
-  showToast('추가됐어요! AI로 앨범 검색 중...','ok');
-  await fetchAIAlbums(data);
-  btn.disabled=false; btn.textContent='추가 + AI 앨범 자동검색';
+  showToast(name+' 추가됐어요!','ok');
+  btn.disabled=false; btn.textContent='추가하기';
 }
 
 // ── iTunes 아티스트 이미지 ────────────────────────────────
@@ -652,7 +687,53 @@ CD로 발매된 앨범만 포함. 최신순 정렬.`}]
   await loadAll(); renderMain(); updateStats(); renderSidebar();
 }
 
-// ── 앨범 저장 ─────────────────────────────────────────────
+// ── 일괄 추가 ─────────────────────────────────────────────
+function openBulkModal(){
+  document.getElementById('f-bulk-text').value='';
+  document.getElementById('bulk-preview').innerHTML='';
+  openModal('bulk-modal');
+}
+
+function parseBulkText(text){
+  const blocks=text.split(/^---$/m).map(b=>b.trim()).filter(Boolean);
+  return blocks.map(block=>{
+    const lines=block.split('\n').map(l=>l.trim()).filter(Boolean);
+    const get=(key)=>{
+      const line=lines.find(l=>l.startsWith(key+':'));
+      return line?line.slice(key.length+1).trim():'';
+    };
+    const tracksIdx=lines.findIndex(l=>l.startsWith('수록곡:'));
+    const tracks=tracksIdx>=0?lines.slice(tracksIdx+1).join('\n'):'';
+    return {
+      title: get('앨범명'),
+      type: get('종류')||'미니앨범',
+      release_date: get('발매일'),
+      tracks
+    };
+  }).filter(a=>a.title);
+}
+
+async function saveBulk(){
+  if(!selArtist){showToast('가수를 먼저 선택하세요','err');return;}
+  const text=document.getElementById('f-bulk-text').value.trim();
+  if(!text){showToast('내용을 붙여넣어 주세요','err');return;}
+  const parsed=parseBulkText(text);
+  if(parsed.length===0){showToast('형식을 확인해주세요','err');return;}
+
+  const btn=document.querySelector('#bulk-modal .btn-save');
+  btn.disabled=true; btn.textContent='추가 중...';
+
+  let count=0;
+  for(const al of parsed){
+    const {data,error}=await db.from('albums').insert([{artist_id:selArtist.id,...al}]).select().single();
+    if(!error&&data){albums.push(data);count++;}
+  }
+
+  closeModal('bulk-modal');
+  renderMain(); updateStats(); renderSidebar();
+  showToast(`${count}개 앨범이 추가됐어요!`,'ok');
+  btn.disabled=false; btn.textContent='한번에 추가하기';
+}
 function openAlbumModal(){ editingAlbumId=null; document.getElementById('f-album-title').value=''; document.getElementById('f-album-type').value='정규'; document.getElementById('f-album-date').value=''; document.getElementById('f-album-tracks').value=''; openModal('album-modal'); }
 async function saveAlbum(){
   const title=document.getElementById('f-album-title').value.trim();
