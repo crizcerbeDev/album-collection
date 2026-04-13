@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<!-- saved from url=(0076)file:///C:/Users/%EC%9D%B4%EC%A7%84%EC%84%9D/Downloads/album-collection.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Album Collection</title>
+<link href="./album-collection_files/css2" rel="stylesheet">
+<script src="./album-collection_files/supabase.js.다운로드"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafafa;--bg2:#fff;--border:#e8e8e8;--border2:#d0d0d0;
+  --text:#111;--text2:#666;--text3:#aaa;
+  --accent:#111;--accent2:#444;
+  --green:#16a34a;--red:#dc2626;--blue:#2563eb;
+  --purple:#7c3aed;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;overflow-x:hidden}
+
+/* ── 잠금화면 ── */
+#lock{position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center}
+.lock-box{text-align:center;width:280px}
+.lock-label{font-size:10px;letter-spacing:.2em;color:#aaa;margin-bottom:14px}
+.lock-input-wrap{position:relative;margin-bottom:12px}
+#lock-input{width:100%;background:#f9f9f9;border:.5px solid #e0e0e0;border-radius:8px;color:#111;font-size:15px;padding:13px 40px 13px 16px;outline:none;text-align:center;letter-spacing:.2em;font-family:'Noto Sans KR',sans-serif;transition:border-color .2s}
+#lock-input:focus{border-color:#111}
+#lock-input.err{border-color:#dc2626;animation:shake .35s ease}
+.lock-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;cursor:pointer;opacity:.3}
+#lock-btn{width:100%;padding:13px;background:transparent;border:none;color:transparent;font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+.lock-err{font-size:11px;color:#dc2626;margin-top:8px;height:16px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+/* ── 앱 ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+
+/* ── 헤더 ── */
+header{background:#fff;border-bottom:.5px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:16px}
+.site-title{font-size:14px;font-weight:700;letter-spacing:.15em;color:#111}
+.stats-bar{display:flex;gap:16px}
+.stat-item{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.stat-num{font-weight:700;color:var(--text)}
+.btn-add-artist{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#111;border:none;color:#fff;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:500;border-radius:6px;cursor:pointer;transition:opacity .2s;letter-spacing:.05em}
+.btn-add-artist:hover{opacity:.75}
+
+/* ── 바디 ── */
+.body{display:flex;flex:1}
+
+/* ── 사이드바 ── */
+.sidebar{width:200px;background:#fff;border-right:.5px solid var(--border);flex-shrink:0;overflow-y:auto;padding:16px 0}
+.sidebar-label{font-size:9px;letter-spacing:.15em;color:var(--text3);padding:0 16px;margin-bottom:8px}
+.artist-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.artist-item:hover{background:#f5f5f5}
+.artist-item.active{background:#f0f0f0;border-left-color:#111}
+.artist-avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#888}
+.artist-avatar img{width:100%;height:100%;object-fit:cover}
+.artist-info{min-width:0}
+.artist-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist-sub{font-size:10px;color:var(--text3);margin-top:1px}
+
+/* ── 메인 ── */
+.main{flex:1;padding:24px;overflow-y:auto}
+.main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.main-title{font-size:16px;font-weight:700}
+.main-actions{display:flex;gap:8px}
+.btn-sm{padding:7px 14px;background:transparent;border:.5px solid var(--border2);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:11px;border-radius:6px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:5px}
+.btn-sm:hover{background:#f5f5f5}
+.btn-sm.primary{background:#111;border-color:#111;color:#fff}
+.btn-sm.primary:hover{opacity:.8}
+
+/* ── 앨범 그리드 ── */
+.album-section{margin-bottom:32px}
+.album-section-title{font-size:10px;letter-spacing:.12em;color:var(--text3);margin-bottom:12px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
+.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.album-card{background:#fff;border:.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s}
+.album-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.album-card.selected{border-color:#111;box-shadow:0 0 0 1px #111}
+.album-thumb{aspect-ratio:1;background:#f0f0f0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.album-thumb img{width:100%;height:100%;object-fit:cover}
+.album-thumb-placeholder{font-size:32px;color:#ccc}
+.owned-badge{position:absolute;top:6px;right:6px;background:#16a34a;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px}
+.not-owned-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.08);color:#888;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px}
+.album-body{padding:10px}
+.album-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.album-meta{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:500}
+.tag-type{background:#f0f0f0;color:#555}
+.tag-owned{background:#dcfce7;color:#16a34a}
+.tag-notowned{background:#f5f5f5;color:#aaa}
+
+/* ── 버전 패널 ── */
+.version-panel{background:#fff;border:.5px solid var(--border);border-radius:10px;padding:20px;margin-top:20px}
+.vp-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.vp-title{font-size:14px;font-weight:700}
+.vp-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.version-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.ver-card{background:#fafafa;border:.5px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .15s}
+.ver-card:hover{border-color:var(--border2)}
+.ver-card.selected{border-color:#111;background:#fff}
+.ver-thumb{aspect-ratio:1;background:#f0f0f0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.ver-thumb img{width:100%;height:100%;object-fit:cover}
+.ver-body{padding:8px}
+.ver-name{font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.ver-owned{font-size:10px;color:var(--green);font-weight:700}
+.ver-notowned{font-size:10px;color:var(--text3)}
+.add-ver-btn{border:.5px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:80px;color:var(--text3);font-size:11px;flex-direction:column;gap:4px;transition:all .15s;background:transparent}
+.add-ver-btn:hover{background:#f5f5f5;border-color:#999}
+
+/* ── 버전 상세 ── */
+.ver-detail{background:#fafafa;border:.5px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px}
+.vd-top{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+.vd-img{width:72px;height:72px;border-radius:6px;background:#e8e8e8;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.vd-img img{width:100%;height:100%;object-fit:cover}
+.vd-img-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:10px;color:#fff;text-align:center}
+.vd-img:hover .vd-img-overlay{opacity:1}
+.vd-info{flex:1}
+.vd-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.vd-owned-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.vd-owned-label{font-size:11px;color:var(--text2)}
+.owned-counter{display:flex;align-items:center;gap:8px}
+.counter-btn{width:28px;height:28px;border:.5px solid var(--border2);background:#fff;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.counter-btn:hover{background:#f0f0f0}
+.counter-num{font-size:16px;font-weight:700;min-width:24px;text-align:center}
+.vd-actions{display:flex;gap:6px;margin-top:10px}
+
+/* ── 트랙 ── */
+.track-section{border-top:.5px solid var(--border);padding-top:14px}
+.track-label{font-size:10px;letter-spacing:.12em;color:var(--text3);margin-bottom:10px}
+.track-row{display:flex;align-items:center;gap:10px;padding:6px 4px;border-radius:6px}
+.track-row:hover{background:#f5f5f5}
+.track-num{font-size:10px;color:var(--text3);width:20px;text-align:right;flex-shrink:0}
+.track-name{font-size:12px;flex:1}
+.track-title-tag{font-size:9px;padding:1px 6px;background:#f0f0f0;color:#555;border-radius:4px}
+
+/* ── 소장 요약 ── */
+.own-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.sum-card{background:#fafafa;border:.5px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.sum-num{font-size:20px;font-weight:700}
+.sum-label{font-size:9px;color:var(--text3);letter-spacing:.08em;margin-top:2px}
+
+/* ── 빈 상태 ── */
+.empty{text-align:center;padding:80px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.3}
+.empty-text{font-size:13px;line-height:1.8}
+
+/* ── 모달 ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:440px;transform:translateY(12px);transition:transform .25s;max-height:90vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.1em;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:#fafafa;border:.5px solid var(--border);border-radius:6px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#111}
+.form-group textarea{resize:vertical;min-height:80px;line-height:1.6}
+.form-group select option{background:#fff}
+.img-upload-area{border:.5px dashed var(--border2);border-radius:6px;padding:16px;text-align:center;cursor:pointer;transition:all .15s;background:#fafafa}
+.img-upload-area:hover{background:#f0f0f0;border-color:#999}
+.img-upload-area input{display:none}
+.img-preview{width:80px;height:80px;border-radius:6px;object-fit:cover;margin:0 auto 8px;display:block}
+.img-upload-hint{font-size:11px;color:var(--text3);line-height:1.5}
+.modal-footer{display:flex;gap:8px;margin-top:20px}
+.btn-cancel{flex:1;padding:10px;background:transparent;border:.5px solid var(--border);color:var(--text2);font-family:'Noto Sans KR',sans-serif;font-size:13px;border-radius:6px;cursor:pointer;transition:all .18s}
+.btn-cancel:hover{background:#f5f5f5}
+.btn-save{flex:2;padding:10px;background:#111;border:none;color:#fff;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;border-radius:6px;cursor:pointer;transition:opacity .18s}
+.btn-save:hover{opacity:.8}
+.btn-save:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#111;color:#fff;font-size:12px;padding:10px 20px;border-radius:6px;opacity:0;transition:all .25s;z-index:9999;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:#16a34a}
+.toast.err{background:#dc2626}
+
+/* ── AI 로딩 ── */
+.ai-loading{display:none;align-items:center;gap:10px;padding:16px;background:#fafafa;border:.5px solid var(--border);border-radius:8px;margin-bottom:16px;font-size:12px;color:var(--text2)}
+.ai-loading.show{display:flex}
+.spinner{width:16px;height:16px;border:2px solid #e0e0e0;border-top-color:#111;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:640px){
+  .sidebar{width:64px}
+  .artist-name,.artist-sub{display:none}
+  .stats-bar{display:none}
+  .main{padding:16px}
+  .album-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .own-summary{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- 잠금화면 -->
+<div id="lock">
+  <div class="lock-box">
+    <div class="lock-label">ENTER PASSWORD</div>
+    <div class="lock-input-wrap">
+      <input type="password" id="lock-input" placeholder="••••••••••" onkeydown="if(event.key===&#39;Enter&#39;)unlock()">
+      <span class="lock-eye" onclick="toggleLockEye()">👁</span>
+    </div>
+    <button id="lock-btn" onclick="unlock()">입장</button>
+    <div class="lock-err" id="lock-err"></div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="site-title">COLLECTION</div>
+      <div class="stats-bar">
+        <div class="stat-item">가수 <span class="stat-num" id="stat-artists">0</span></div>
+        <div class="stat-item">앨범 <span class="stat-num" id="stat-albums">0</span></div>
+        <div class="stat-item">소장 <span class="stat-num" id="stat-owned">0</span>장</div>
+      </div>
+    </div>
+    <button class="btn-add-artist" onclick="openArtistModal()">+ 가수 추가</button>
+  </header>
+
+  <div class="body">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-label">ARTISTS</div>
+    </div>
+    <div class="main" id="main">
+      <div class="empty">
+        <div class="empty-icon">🎵</div>
+        <div class="empty-text">왼쪽에서 가수를 선택하거나<br>가수를 추가해보세요!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 가수 추가 모달 -->
+<div class="modal-overlay" id="artist-modal" onclick="handleOverlay(event,&#39;artist-modal&#39;)">
+  <div class="modal">
+    <h3 id="artist-modal-title">가수 추가</h3>
+    <div class="ai-loading" id="ai-loading">
+      <div class="spinner"></div>
+      <span id="ai-loading-text">AI가 앨범 정보를 가져오는 중...</span>
+    </div>
+    <div class="form-group">
+      <label>가수 이름</label>
+      <input type="text" id="f-artist-name" placeholder="예: 에스파">
+    </div>
+    <div class="form-group">
+      <label>프로필 이미지</label>
+      <div class="img-upload-area" onclick="document.getElementById(&#39;f-artist-img-file&#39;).click()">
+        <input type="file" id="f-artist-img-file" accept="image/*" onchange="previewImg(this,&#39;artist-img-preview&#39;,&#39;f-artist-img-url&#39;)">
+        <img id="artist-img-preview" class="img-preview" style="display:none">
+        <div class="img-upload-hint">📁 클릭해서 이미지 업로드<br><span style="color:#ccc">또는</span></div>
+      </div>
+      <input type="text" id="f-artist-img-url" placeholder="이미지 URL 직접 입력" style="margin-top:6px" oninput="syncImgUrl(this,&#39;artist-img-preview&#39;)">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal(&#39;artist-modal&#39;)">취소</button>
+      <button class="btn-save" id="artist-save-btn" onclick="saveArtist()">추가 + AI 앨범 자동검색</button>
+    </div>
+  </div>
+</div>
+
+<!-- 앨범 추가 모달 -->
+<div class="modal-overlay" id="album-modal" onclick="handleOverlay(event,&#39;album-modal&#39;)">
+  <div class="modal">
+    <h3>앨범 추가</h3>
+    <div class="form-group">
+      <label>앨범 제목</label>
+      <input type="text" id="f-album-title" placeholder="예: Armageddon">
+    </div>
+    <div class="form-group">
+      <label>종류</label>
+      <select id="f-album-type">
+        <option>정규</option><option>미니앨범</option><option>싱글</option><option>EP</option><option>리패키지</option><option>컴필레이션</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>발매일</label>
+      <input type="text" id="f-album-date" placeholder="예: 2024.05.22">
+    </div>
+    <div class="form-group">
+      <label>수록곡 (줄바꿈으로 구분, 타이틀곡 앞에 * 표시)</label>
+      <textarea id="f-album-tracks" placeholder="*Armageddon
+Supernova
+Intro: Ascent
+Lucky Girl Syndrome"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal(&#39;album-modal&#39;)">취소</button>
+      <button class="btn-save" onclick="saveAlbum()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 버전 추가 모달 -->
+<div class="modal-overlay" id="ver-modal" onclick="handleOverlay(event,&#39;ver-modal&#39;)">
+  <div class="modal">
+    <h3>버전 추가</h3>
+    <div class="form-group">
+      <label>버전 이름</label>
+      <input type="text" id="f-ver-name" placeholder="예: Poster Ver.">
+    </div>
+    <div class="form-group">
+      <label>커버 이미지</label>
+      <div class="img-upload-area" onclick="document.getElementById(&#39;f-ver-img-file&#39;).click()">
+        <input type="file" id="f-ver-img-file" accept="image/*" onchange="previewImg(this,&#39;ver-img-preview&#39;,&#39;f-ver-img-url&#39;)">
+        <img id="ver-img-preview" class="img-preview" style="display:none">
+        <div class="img-upload-hint">📁 클릭해서 이미지 업로드<br><span style="color:#ccc">또는</span></div>
+      </div>
+      <input type="text" id="f-ver-img-url" placeholder="이미지 URL 직접 입력" style="margin-top:6px" oninput="syncImgUrl(this,&#39;ver-img-preview&#39;)">
+    </div>
+    <div class="form-group">
+      <label>CD 소장 수량</label>
+      <input type="number" id="f-ver-owned" min="0" value="0" placeholder="0">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal(&#39;ver-modal&#39;)">취소</button>
+      <button class="btn-save" onclick="saveVersion()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PW = '1q2w3e4r5t';
+const SUPABASE_URL = 'https://ymlcvvdaujtzxpuqlwfl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltbGN2dmRhdWp0enhwdXFsd2ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQ4NDIsImV4cCI6MjA5MTU4MDg0Mn0._gEEz-mF4zh8H0lAFxautlXORYwBuekHghK61BwwTw4';
+const CLAUDE_KEY  = ''; // Claude API 키 (나중에 입력)
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── 상태 ──────────────────────────────────────────────────
+let artists=[], albums=[], versions=[];
+let selArtist=null, selAlbum=null, selVersion=null;
+let editingAlbumId=null, editingVerId=null;
+let pendingImgFile={artist:null, ver:null};
+
+// ── 잠금 ──────────────────────────────────────────────────
+function toggleLockEye(){
+  const i=document.getElementById('lock-input');
+  i.type=i.type==='password'?'text':'password';
+}
+function unlock(){
+  const v=document.getElementById('lock-input').value;
+  const err=document.getElementById('lock-err');
+  const inp=document.getElementById('lock-input');
+  if(v===PW){
+    sessionStorage.setItem('col_auth','1');
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
+    init();
+  } else {
+    err.textContent='비밀번호가 틀렸어요!';
+    inp.classList.add('err');
+    inp.value='';
+    setTimeout(()=>{inp.classList.remove('err');err.textContent='';},1500);
+  }
+}
+if(sessionStorage.getItem('col_auth')==='1'){
+  document.getElementById('lock').style.display='none';
+  document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
+  init();
+}
+
+// ── 초기화 ────────────────────────────────────────────────
+async function init(){
+  await loadAll();
+  renderSidebar();
+  updateStats();
+  if(artists.length>0) selectArtist(artists[0]);
+}
+
+async function loadAll(){
+  const [a,al,v]=await Promise.all([
+    db.from('artists').select('*').order('id'),
+    db.from('albums').select('*').order('release_date'),
+    db.from('versions').select('*').order('id')
+  ]);
+  artists=a.data||[]; albums=al.data||[]; versions=v.data||[];
+}
+
+// ── 통계 ──────────────────────────────────────────────────
+function updateStats(){
+  document.getElementById('stat-artists').textContent=artists.length;
+  document.getElementById('stat-albums').textContent=albums.length;
+  const total=versions.reduce((s,v)=>s+(v.owned_cd||0),0);
+  document.getElementById('stat-owned').textContent=total;
+}
+
+// ── 사이드바 ──────────────────────────────────────────────
+function renderSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.innerHTML='<div class="sidebar-label">ARTISTS</div>';
+  artists.forEach(a=>{
+    const myAlbums=albums.filter(al=>al.artist_id===a.id);
+    const myVers=versions.filter(v=>myAlbums.some(al=>al.id===v.album_id));
+    const ownedCnt=myVers.reduce((s,v)=>s+(v.owned_cd||0),0);
+    const div=document.createElement('div');
+    div.className='artist-item'+(selArtist?.id===a.id?' active':'');
+    div.onclick=()=>selectArtist(a);
+    const imgHTML=a.image_url
+      ?`<img src="${a.image_url}" onerror="this.style.display='none'">`
+      :`<span>${a.name.slice(0,2)}</span>`;
+    div.innerHTML=`
+      <div class="artist-avatar">${imgHTML}</div>
+      <div class="artist-info">
+        <div class="artist-name">${a.name}</div>
+        <div class="artist-sub">${myAlbums.length}장 · ${ownedCnt}개 소장</div>
+      </div>`;
+    sb.appendChild(div);
+  });
+}
+
+// ── 가수 선택 ─────────────────────────────────────────────
+function selectArtist(a){
+  selArtist=a; selAlbum=null; selVersion=null;
+  renderSidebar();
+  renderMain();
+}
+
+// ── 메인 렌더 ─────────────────────────────────────────────
+function renderMain(){
+  const main=document.getElementById('main');
+  if(!selArtist){main.innerHTML=`<div class="empty"><div class="empty-icon">🎵</div><div class="empty-text">가수를 선택하세요</div></div>`;return;}
+  const myAlbums=albums.filter(al=>al.artist_id===selArtist.id);
+  const types=[...new Set(myAlbums.map(al=>al.type))];
+
+  let html=`
+    <div class="main-header">
+      <div class="main-title">${selArtist.name}</div>
+      <div class="main-actions">
+        <button class="btn-sm" onclick="openAlbumModal()">+ 앨범 추가</button>
+        <button class="btn-sm" onclick="deleteArtist(${selArtist.id})" style="color:#dc2626">삭제</button>
+      </div>
+    </div>`;
+
+  if(myAlbums.length===0){
+    html+=`<div class="empty"><div class="empty-icon">💿</div><div class="empty-text">앨범이 없어요.<br>추가하거나 AI 자동검색을 사용해보세요!</div></div>`;
+  } else {
+    types.forEach(type=>{
+      const typeAlbums=myAlbums.filter(al=>al.type===type);
+      html+=`<div class="album-section"><div class="album-section-title">${type}</div><div class="album-grid">`;
+      typeAlbums.forEach(al=>{
+        const myVers=versions.filter(v=>v.album_id===al.id);
+        const ownedTotal=myVers.reduce((s,v)=>s+(v.owned_cd||0),0);
+        const thumb=myVers[0]?.image_url
+          ?`<img src="${myVers[0].image_url}" onerror="this.parentNode.innerHTML='<span class=album-thumb-placeholder>💿</span>'">`
+          :`<span class="album-thumb-placeholder">💿</span>`;
+        const badge=ownedTotal>0
+          ?`<div class="owned-badge">${ownedTotal}장</div>`
+          :`<div class="not-owned-badge">미소장</div>`;
+        html+=`<div class="album-card${selAlbum?.id===al.id?' selected':''}" onclick="selectAlbum(${al.id})">
+          <div class="album-thumb">${thumb}${badge}</div>
+          <div class="album-body">
+            <div class="album-title">${al.title}</div>
+            <div class="album-meta">
+              <span class="tag tag-type">${al.type}</span>
+              ${ownedTotal>0?`<span class="tag tag-owned">CD ${ownedTotal}장</span>`:`<span class="tag tag-notowned">미소장</span>`}
+            </div>
+          </div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    });
+  }
+
+  if(selAlbum){
+    const al=albums.find(a=>a.id===selAlbum.id);
+    const myVers=versions.filter(v=>v.album_id===selAlbum.id);
+    const ownedTotal=myVers.reduce((s,v)=>s+(v.owned_cd||0),0);
+    const tracks=(al.tracks||'').split('\n').filter(Boolean);
+    const totalVers=myVers.length;
+    const ownedVers=myVers.filter(v=>(v.owned_cd||0)>0).length;
+
+    html+=`<div class="version-panel">
+      <div class="vp-header">
+        <div>
+          <div class="vp-title">${al.title}</div>
+          <div class="vp-sub">${al.type} · ${al.release_date||''}</div>
+        </div>
+        <button class="btn-sm" style="color:#dc2626;font-size:10px" onclick="deleteAlbum(${al.id})">앨범 삭제</button>
+      </div>
+      <div class="version-grid">`;
+
+    myVers.forEach(v=>{
+      const thumb=v.image_url
+        ?`<img src="${v.image_url}" onerror="this.parentNode.innerHTML='<span style=font-size:24px;color:#ccc>💿</span>'">`
+        :`<span style="font-size:24px;color:#ccc">💿</span>`;
+      html+=`<div class="ver-card${selVersion?.id===v.id?' selected':''}" onclick="selectVersion(${v.id})">
+        <div class="ver-thumb">${thumb}</div>
+        <div class="ver-body">
+          <div class="ver-name">${v.name}</div>
+          <div class="${(v.owned_cd||0)>0?'ver-owned':'ver-notowned'}">CD ${(v.owned_cd||0)>0?v.owned_cd+'장 소장':'미소장'}</div>
+        </div>
+      </div>`;
+    });
+
+    html+=`<div class="add-ver-btn" onclick="openVerModal()">
+      <span style="font-size:20px">+</span>버전 추가
+    </div></div>`;
+
+    if(selVersion){
+      const ver=versions.find(v=>v.id===selVersion.id);
+      const imgHTML=ver.image_url
+        ?`<img src="${ver.image_url}" onerror="this.style.display='none'">`
+        :`<span style="font-size:24px;color:#ccc">💿</span>`;
+      html+=`<div class="ver-detail">
+        <div class="vd-top">
+          <div class="vd-img" onclick="openVerImgEdit(${ver.id})">
+            ${imgHTML}
+            <div class="vd-img-overlay">이미지<br>변경</div>
+          </div>
+          <div class="vd-info">
+            <div class="vd-name">${ver.name}</div>
+            <div class="vd-owned-row">
+              <span class="vd-owned-label">CD 소장 수량</span>
+              <div class="owned-counter">
+                <button class="counter-btn" onclick="changeOwned(${ver.id},-1)">−</button>
+                <span class="counter-num" id="owned-${ver.id}">${ver.owned_cd||0}</span>
+                <button class="counter-btn" onclick="changeOwned(${ver.id},1)">+</button>
+              </div>
+            </div>
+            <div class="vd-actions">
+              <button class="btn-sm" onclick="openVerEditModal(${ver.id})" style="font-size:10px">편집</button>
+              <button class="btn-sm" onclick="deleteVersion(${ver.id})" style="color:#dc2626;font-size:10px">삭제</button>
+            </div>
+          </div>
+        </div>`;
+
+      if(tracks.length>0){
+        html+=`<div class="track-section">
+          <div class="track-label">수록곡 (${tracks.length}곡)</div>`;
+        tracks.forEach((t,i)=>{
+          const isTitle=t.startsWith('*');
+          const name=isTitle?t.slice(1):t;
+          html+=`<div class="track-row">
+            <div class="track-num">${i+1}</div>
+            <div class="track-name">${name}</div>
+            ${isTitle?'<span class="track-title-tag">타이틀</span>':''}
+          </div>`;
+        });
+        html+=`</div>`;
+      }
+      html+=`</div>`;
+    }
+
+    html+=`<div class="own-summary">
+      <div class="sum-card"><div class="sum-num">${totalVers}</div><div class="sum-label">총 버전</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:var(--green)">${ownedVers}</div><div class="sum-label">소장 버전</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:var(--blue)">${ownedTotal}</div><div class="sum-label">CD 총 수량</div></div>
+      <div class="sum-card"><div class="sum-num" style="color:var(--text3)">${totalVers-ownedVers}</div><div class="sum-label">미소장</div></div>
+    </div></div>`;
+  }
+
+  main.innerHTML=html;
+}
+
+function selectAlbum(id){
+  selAlbum=albums.find(a=>a.id===id)||null;
+  selVersion=null;
+  renderMain();
+  setTimeout(()=>document.querySelector('.version-panel')?.scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+function selectVersion(id){
+  selVersion=versions.find(v=>v.id===id)||null;
+  renderMain();
+}
+
+// ── CD 수량 변경 ──────────────────────────────────────────
+async function changeOwned(verId, delta){
+  const ver=versions.find(v=>v.id===verId);
+  if(!ver)return;
+  const newVal=Math.max(0,(ver.owned_cd||0)+delta);
+  const {error}=await db.from('versions').update({owned_cd:newVal}).eq('id',verId);
+  if(error){showToast('저장 실패','err');return;}
+  ver.owned_cd=newVal;
+  const el=document.getElementById('owned-'+verId);
+  if(el)el.textContent=newVal;
+  updateStats();
+  renderSidebar();
+}
+
+// ── 가수 저장 ─────────────────────────────────────────────
+async function saveArtist(){
+  const name=document.getElementById('f-artist-name').value.trim();
+  if(!name){showToast('이름을 입력하세요','err');return;}
+  const btn=document.getElementById('artist-save-btn');
+  btn.disabled=true; btn.textContent='저장 중...';
+
+  let imgUrl=document.getElementById('f-artist-img-url').value.trim();
+  if(pendingImgFile.artist){
+    imgUrl=await uploadImg(pendingImgFile.artist,'artist_'+Date.now());
+    pendingImgFile.artist=null;
+  }
+  if(!imgUrl) imgUrl=await fetchArtistImg(name);
+
+  const {data,error}=await db.from('artists').insert([{name,image_url:imgUrl}]).select().single();
+  if(error){showToast('저장 실패','err');btn.disabled=false;btn.textContent='추가 + AI 앨범 자동검색';return;}
+  artists.push(data);
+  closeModal('artist-modal');
+  renderSidebar();
+  selectArtist(data);
+  showToast('추가됐어요! AI로 앨범 검색 중...','ok');
+  await fetchAIAlbums(data);
+  btn.disabled=false; btn.textContent='추가 + AI 앨범 자동검색';
+}
+
+// ── iTunes 아티스트 이미지 ────────────────────────────────
+async function fetchArtistImg(name){
+  try{
+    const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(name)}&media=music&limit=1`);
+    const d=await r.json();
+    if(d.results?.length>0) return d.results[0].artworkUrl100.replace('100x100','300x300');
+  }catch(e){}
+  return '';
+}
+
+// ── Claude AI 앨범 자동검색 ───────────────────────────────
+async function fetchAIAlbums(artist){
+  if(!CLAUDE_KEY){
+    showToast('Claude API 키가 없어요. 앨범을 직접 추가해주세요.','err');
+    return;
+  }
+  const loading=document.getElementById('ai-loading');
+  loading.classList.add('show');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user',content:`케이팝 가수 "${artist.name}"의 공식 음반 목록을 JSON 배열로만 응답해주세요. 다른 텍스트 없이 순수 JSON만.
+형식: [{"title":"앨범명","type":"정규|미니앨범|싱글|EP|리패키지","release_date":"YYYY.MM.DD","tracks":"*타이틀곡\n수록곡2\n수록곡3"}]
+CD로 발매된 앨범만 포함. 최신순 정렬.`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'[]';
+    const clean=text.replace(/```json|```/g,'').trim();
+    const albumList=JSON.parse(clean);
+    for(const al of albumList){
+      const {data:saved}=await db.from('albums').insert([{artist_id:artist.id,...al}]).select().single();
+      if(saved) albums.push(saved);
+    }
+    showToast(`${albumList.length}개 앨범을 가져왔어요!`,'ok');
+  }catch(e){
+    showToast('앨범 자동검색 실패. 직접 추가해주세요.','err');
+  }
+  loading.classList.remove('show');
+  await loadAll(); renderMain(); updateStats(); renderSidebar();
+}
+
+// ── 앨범 저장 ─────────────────────────────────────────────
+function openAlbumModal(){ editingAlbumId=null; document.getElementById('f-album-title').value=''; document.getElementById('f-album-type').value='정규'; document.getElementById('f-album-date').value=''; document.getElementById('f-album-tracks').value=''; openModal('album-modal'); }
+async function saveAlbum(){
+  const title=document.getElementById('f-album-title').value.trim();
+  if(!title||!selArtist){showToast('앨범 제목을 입력하세요','err');return;}
+  const payload={artist_id:selArtist.id,title,type:document.getElementById('f-album-type').value,release_date:document.getElementById('f-album-date').value.trim(),tracks:document.getElementById('f-album-tracks').value.trim()};
+  const {data,error}=await db.from('albums').insert([payload]).select().single();
+  if(error){showToast('저장 실패','err');return;}
+  albums.push(data);
+  closeModal('album-modal');
+  selAlbum=data; renderMain(); updateStats();
+  showToast('앨범이 추가됐어요!','ok');
+}
+
+// ── 버전 저장 ─────────────────────────────────────────────
+function openVerModal(){ editingVerId=null; document.getElementById('f-ver-name').value=''; document.getElementById('f-ver-img-url').value=''; document.getElementById('f-ver-owned').value='0'; document.getElementById('ver-img-preview').style.display='none'; pendingImgFile.ver=null; openModal('ver-modal'); }
+function openVerEditModal(id){
+  const v=versions.find(x=>x.id===id);
+  if(!v)return;
+  editingVerId=id;
+  document.getElementById('f-ver-name').value=v.name;
+  document.getElementById('f-ver-img-url').value=v.image_url||'';
+  document.getElementById('f-ver-owned').value=v.owned_cd||0;
+  const prev=document.getElementById('ver-img-preview');
+  if(v.image_url){prev.src=v.image_url;prev.style.display='block';}else{prev.style.display='none';}
+  openModal('ver-modal');
+}
+async function saveVersion(){
+  const name=document.getElementById('f-ver-name').value.trim();
+  if(!name||!selAlbum){showToast('버전 이름을 입력하세요','err');return;}
+  let imgUrl=document.getElementById('f-ver-img-url').value.trim();
+  if(pendingImgFile.ver){
+    imgUrl=await uploadImg(pendingImgFile.ver,'ver_'+Date.now());
+    pendingImgFile.ver=null;
+  }
+  const owned=parseInt(document.getElementById('f-ver-owned').value)||0;
+  if(editingVerId){
+    const {error}=await db.from('versions').update({name,image_url:imgUrl,owned_cd:owned}).eq('id',editingVerId);
+    if(error){showToast('수정 실패','err');return;}
+    const v=versions.find(x=>x.id===editingVerId);
+    if(v){v.name=name;v.image_url=imgUrl;v.owned_cd=owned;}
+  } else {
+    const {data,error}=await db.from('versions').insert([{album_id:selAlbum.id,name,image_url:imgUrl,owned_cd:owned}]).select().single();
+    if(error){showToast('저장 실패','err');return;}
+    versions.push(data);
+    selVersion=data;
+  }
+  closeModal('ver-modal');
+  renderMain(); updateStats(); renderSidebar();
+  showToast('저장됐어요!','ok');
+}
+
+// ── 이미지 업로드 ─────────────────────────────────────────
+async function uploadImg(file, name){
+  const ext=file.name.split('.').pop();
+  const path=`${name}.${ext}`;
+  const {error}=await db.storage.from('album-images').upload(path,file,{upsert:true});
+  if(error) return '';
+  const {data}=db.storage.from('album-images').getPublicUrl(path);
+  return data.publicUrl||'';
+}
+function previewImg(input, previewId, urlInputId){
+  const file=input.files[0];
+  if(!file)return;
+  const key=previewId.includes('artist')?'artist':'ver';
+  pendingImgFile[key]=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const prev=document.getElementById(previewId);
+    prev.src=e.target.result; prev.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function syncImgUrl(input, previewId){
+  const prev=document.getElementById(previewId);
+  if(input.value){prev.src=input.value;prev.style.display='block';}
+  else prev.style.display='none';
+}
+function openVerImgEdit(verId){
+  openVerEditModal(verId);
+}
+
+// ── 삭제 ─────────────────────────────────────────────────
+async function deleteArtist(id){
+  if(!confirm('이 가수와 모든 앨범을 삭제할까요?'))return;
+  const myAlbums=albums.filter(a=>a.artist_id===id);
+  for(const al of myAlbums){
+    await db.from('versions').delete().eq('album_id',al.id);
+  }
+  await db.from('albums').delete().eq('artist_id',id);
+  await db.from('artists').delete().eq('id',id);
+  artists=artists.filter(a=>a.id!==id);
+  albums=albums.filter(a=>a.artist_id!==id);
+  versions=versions.filter(v=>!myAlbums.some(a=>a.id===v.album_id));
+  selArtist=null; selAlbum=null; selVersion=null;
+  renderSidebar(); renderMain(); updateStats();
+  showToast('삭제됐어요','err');
+}
+async function deleteAlbum(id){
+  if(!confirm('이 앨범을 삭제할까요?'))return;
+  await db.from('versions').delete().eq('album_id',id);
+  await db.from('albums').delete().eq('id',id);
+  albums=albums.filter(a=>a.id!==id);
+  versions=versions.filter(v=>v.album_id!==id);
+  selAlbum=null; selVersion=null;
+  renderMain(); updateStats(); renderSidebar();
+  showToast('삭제됐어요','err');
+}
+async function deleteVersion(id){
+  if(!confirm('이 버전을 삭제할까요?'))return;
+  await db.from('versions').delete().eq('id',id);
+  versions=versions.filter(v=>v.id!==id);
+  selVersion=null;
+  renderMain(); updateStats(); renderSidebar();
+  showToast('삭제됐어요','err');
+}
+
+// ── 모달 ─────────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function handleOverlay(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function openArtistModal(){
+  document.getElementById('f-artist-name').value='';
+  document.getElementById('f-artist-img-url').value='';
+  document.getElementById('artist-img-preview').style.display='none';
+  pendingImgFile.artist=null;
+  openModal('artist-modal');
+}
+
+// ── 토스트 ────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+(type||'');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.className='toast';},2200);
+}
+</script>
+
+
+</body></html>
