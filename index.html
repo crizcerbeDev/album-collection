@@ -650,18 +650,6 @@ function toggleSort(){
   sortByDate=!sortByDate;
   renderMain();
 }
-    }
-
-    html+=`<div class="own-summary">
-      <div class="sum-card"><div class="sum-num">${totalVers}</div><div class="sum-label">총 버전</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--green)">${ownedVers}</div><div class="sum-label">소장 버전</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--blue)">${ownedTotal}</div><div class="sum-label">CD 총 수량</div></div>
-      <div class="sum-card"><div class="sum-num" style="color:var(--text3)">${totalVers-ownedVers}</div><div class="sum-label">미소장</div></div>
-    </div></div>`;
-  }
-
-  main.innerHTML=html;
-}
 
 function selectAlbum(id){
   selAlbum=albums.find(a=>a.id===id)||null;
